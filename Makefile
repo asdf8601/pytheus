@@ -1,8 +1,7 @@
 # variables
 PYVER  := 3.10
-venv   := .venv
-python := $(venv)/bin/python
-pip    := $(venv)/bin/pip
+python := uv run python
+uv     := uv
 
 
 ##@ Utility
@@ -12,17 +11,13 @@ help:  ## Display this help
 
 
 ##@ Setup
-$(venv):
-	@if [ -x "`command -v conda`" ]; then \
-		conda create --prefix $(venv) python=$(PYVER) -y -q; \
-	else \
-		python$(PYVER) -m venv $(venv); \
-	fi
-
-
 .PHONY: install
-install: $(venv)  ## install
-	$(pip) install . -r requirements.txt
+install:  ## install dependencies
+	$(uv) sync
+
+.PHONY: sync
+sync:  ## sync dependencies with uv.lock
+	$(uv) sync
 
 
 .PHONY: push
@@ -33,41 +28,35 @@ push: tag ## push to origin a new tag, e.g. make push v=<version>
 
 ##@ Development
 .PHONY: dev
-dev: $(venv) ## install dev mode
-	$(pip) install -e . -r requirements-dev.txt
+dev:  ## install dev dependencies
+	$(uv) sync --group dev
 
 .PHONY: test
-test: $(venv) ## run tests
-	@$(pip) -q install pytest
-	$(python) -m pytest tests
+test:  ## run tests
+	$(uv) run pytest tests
 
 .PHONY: lint
-lint: $(venv)  ## run linting check
-	@$(pip) -q install ruff
-	$(python) -m ruff ./src
+lint:  ## run linting check
+	$(uv) run ruff check .
+
+.PHONY: format
+format:  ## format code with black and ruff
+	$(uv) run ruff check --fix .
+	$(uv) run black .
 
 .PHONY: black
-black: $(venv)  ## apply black to source code
-	@$(pip) -q install black
-	$(python) -m black -l79
+black:  ## apply black to source code
+	$(uv) run black .
 
 
-.PHONY: requirements.txt
-requirements.txt:  ## generate requirements.txt, e.g. make requirements.txt
-	@test -d /tmp/venv && rm -r /tmp/venv || true
-	@$(python) -m venv /tmp/venv
-	@/tmp/venv/bin/python -m pip -q install pip -U
-	@/tmp/venv/bin/python -m pip -q install . --progress-bar off
-	@/tmp/venv/bin/python -m pip freeze > requirements.txt
-	$(MAKE) fix-requirements.txt
+.PHONY: lock
+lock:  ## update uv.lock file
+	$(uv) lock
 
-.PHONY: fix-requirements.txt
-fix-requirements.txt:  ## fix requirements.txt using GH_TOKEN variable for privates repos.
-	@if [ "$(shell uname -s)" = "Linux" ]; then \
-		sed -i 's/git+ssh:\/\/git@/git+https:\/\/$${GH_TOKEN}@/' requirements.txt; \
-		sed -i '/file:/d' requirements.txt; \
-	elif [ "$(shell uname -s)" = "Darwin" ]; then \
-		sed -i '' -e 's/git+ssh:\/\/git@/git+https:\/\/$${GH_TOKEN}@/' requirements.txt; \
-		sed -i '' -e '/file:/d' requirements.txt; \
-	fi
-	@cat requirements.txt
+.PHONY: add
+add:  ## add a dependency, e.g. make add pkg=requests
+	$(uv) add $(pkg)
+
+.PHONY: remove
+remove:  ## remove a dependency, e.g. make remove pkg=requests
+	$(uv) remove $(pkg)
