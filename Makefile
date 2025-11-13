@@ -40,13 +40,9 @@ lint:  ## run linting check
 	$(uv) run ruff check .
 
 .PHONY: format
-format:  ## format code with black and ruff
+format:  ## format code with ruff
 	$(uv) run ruff check --fix .
-	$(uv) run black .
-
-.PHONY: black
-black:  ## apply black to source code
-	$(uv) run black .
+	$(uv) run ruff format .
 
 
 .PHONY: lock

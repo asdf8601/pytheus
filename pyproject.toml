@@ -15,12 +15,16 @@ description = "pytheus is a hacky CLI tool for get data from prometheus."
 pytheus = "pytheus:app"
 
 [dependency-groups]
-dev = ["pytest", "ruff", "black", "pre-commit"]
+dev = [
+    "pytest",
+    "ruff",
+    "pre-commit",
+]
 
 [tool.ruff]
 line-length = 79
 target-version = "py310"
 
-[tool.black]
-line-length = 79
-target-version = ["py310"]
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
